@@ -1,4 +1,21 @@
-import type { FeedConfig } from "@/types";
+export interface FeedConfig {
+  url: string;
+  source: string;
+  track: TrackName;
+}
+
+export type TrackName =
+  | "Energy & Data Centers"
+  | "Cloud Computing"
+  | "Indigenous & Conservation"
+  | "Environmental AI Governance";
+
+export const TRACKS: TrackName[] = [
+  "Energy & Data Centers",
+  "Cloud Computing",
+  "Indigenous & Conservation",
+  "Environmental AI Governance",
+];
 
 export const FEEDS: FeedConfig[] = [
   // Energy & Data Centers
@@ -17,7 +34,6 @@ export const FEEDS: FeedConfig[] = [
     source: "Google News: Green DC",
     track: "Energy & Data Centers",
   },
-
   // Cloud Computing
   {
     url: "https://www.theregister.com/headlines.atom",
@@ -34,7 +50,6 @@ export const FEEDS: FeedConfig[] = [
     source: "Google News: Cloud Policy",
     track: "Cloud Computing",
   },
-
   // Indigenous & Conservation
   {
     url: "https://www.culturalsurvival.org/rss.xml",
@@ -46,21 +61,25 @@ export const FEEDS: FeedConfig[] = [
     source: "IUCN",
     track: "Indigenous & Conservation",
   },
-
-  // Sustainable AI Policy
+  // Environmental AI Governance
   {
-    url: "https://www.technologyreview.com/feed/",
-    source: "MIT Tech Review",
-    track: "Sustainable AI Policy",
+    url: "https://news.google.com/rss/search?q=%22AI+environmental%22+OR+%22sustainable+AI%22+standard+policy&hl=en-US&gl=US&ceid=US:en",
+    source: "Google News: Sustainable AI",
+    track: "Environmental AI Governance",
   },
   {
-    url: "https://venturebeat.com/category/ai/feed/",
-    source: "VentureBeat AI",
-    track: "Sustainable AI Policy",
+    url: "https://news.google.com/rss/search?q=%22AI+carbon%22+OR+%22AI+energy+footprint%22+OR+%22AI+emissions%22+governance&hl=en-US&gl=US&ceid=US:en",
+    source: "Google News: AI Carbon",
+    track: "Environmental AI Governance",
   },
   {
-    url: "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
-    source: "The Verge AI",
-    track: "Sustainable AI Policy",
+    url: "https://news.google.com/rss/search?q=ITU+AI+OR+%22UN+AI%22+OR+%22IEEE+AI%22+environmental+standard+2025+OR+2026&hl=en-US&gl=US&ceid=US:en",
+    source: "Google News: AI Standards Bodies",
+    track: "Environmental AI Governance",
+  },
+  {
+    url: "https://news.google.com/rss/search?q=%22AI+governance%22+environment+sustainability+regulation&hl=en-US&gl=US&ceid=US:en",
+    source: "Google News: AI Governance",
+    track: "Environmental AI Governance",
   },
 ];

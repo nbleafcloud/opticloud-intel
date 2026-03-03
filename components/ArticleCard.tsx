@@ -31,7 +31,7 @@ const TRACK_COLORS: Record<Track, string> = {
   "Energy & Data Centers": "bg-blue-500/10 text-blue-400 border-blue-500/20",
   "Cloud Computing": "bg-purple-500/10 text-purple-400 border-purple-500/20",
   "Indigenous & Conservation": "bg-teal-500/10 text-teal-400 border-teal-500/20",
-  "Sustainable AI Policy": "bg-orange-500/10 text-orange-400 border-orange-500/20",
+  "Environmental AI Governance": "bg-orange-500/10 text-orange-400 border-orange-500/20",
 };
 
 function timeAgo(dateStr: string): string {

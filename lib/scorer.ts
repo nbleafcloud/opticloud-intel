@@ -8,6 +8,11 @@ const HIGH_KEYWORDS = [
   "federal rule", "federal ruling", "nist framework", "standard published",
   "new standard", "ratified", "ratification", "treaty", "signed into law",
   "carbon tax", "emissions cap", "data sovereignty law", "fpic", "rights violation",
+  "environmental ai", "ai footprint", "ai energy standard", "ai carbon standard",
+  "un ai", "ieee ai", "itu-t", "l.1801", "ai governance standard", "advisory body",
+  "working group published", "international standard", "ai sustainability standard",
+  "green ai policy", "ai environmental impact", "scope 3", "ai act",
+  "energy efficiency standard",
 ];
 
 const LOW_KEYWORDS = [

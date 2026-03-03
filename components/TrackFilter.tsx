@@ -7,7 +7,7 @@ const TRACKS: Track[] = [
   "Energy & Data Centers",
   "Cloud Computing",
   "Indigenous & Conservation",
-  "Sustainable AI Policy",
+  "Environmental AI Governance",
 ];
 
 const TRACK_STYLES: Record<Track, { active: string; inactive: string }> = {
@@ -23,7 +23,7 @@ const TRACK_STYLES: Record<Track, { active: string; inactive: string }> = {
     active: "border-teal-500/50 bg-teal-500/15 text-teal-300",
     inactive: "border-white/8 text-white/40 hover:border-teal-500/30 hover:text-teal-300/70",
   },
-  "Sustainable AI Policy": {
+  "Environmental AI Governance": {
     active: "border-orange-500/50 bg-orange-500/15 text-orange-300",
     inactive: "border-white/8 text-white/40 hover:border-orange-500/30 hover:text-orange-300/70",
   },

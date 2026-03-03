@@ -1,6 +1,6 @@
 import Parser from "rss-parser";
-import type { Article, FeedConfig } from "@/types";
-import { FEEDS } from "./feeds";
+import type { Article } from "@/types";
+import { FEEDS, type FeedConfig } from "./feeds";
 
 const parser = new Parser({
   timeout: 8000,

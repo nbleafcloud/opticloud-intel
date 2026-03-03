@@ -9,7 +9,7 @@ const TRACKS: Track[] = [
   "Energy & Data Centers",
   "Cloud Computing",
   "Indigenous & Conservation",
-  "Sustainable AI Policy",
+  "Environmental AI Governance",
 ];
 
 export default function FeedClient({ articles }: { articles: Article[] }) {
@@ -23,7 +23,12 @@ export default function FeedClient({ articles }: { articles: Article[] }) {
 
   return (
     <div className="space-y-8">
-      <TrackFilter onFilterChange={setActiveTracks} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <TrackFilter onFilterChange={setActiveTracks} />
+        <span className="text-xs text-white/40">
+          {filtered.length} article{filtered.length !== 1 ? "s" : ""}
+        </span>
+      </div>
       {filtered.length === 0 ? (
         <div className="flex h-48 items-center justify-center text-white/30 text-sm">
           No articles found for selected tracks.

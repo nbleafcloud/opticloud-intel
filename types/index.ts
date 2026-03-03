@@ -4,7 +4,7 @@ export type Track =
   | "Energy & Data Centers"
   | "Cloud Computing"
   | "Indigenous & Conservation"
-  | "Sustainable AI Policy";
+  | "Environmental AI Governance";
 
 export interface Article {
   id: string;
