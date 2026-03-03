@@ -20,6 +20,7 @@ function normalizeTitle(title: string): string {
 
 interface DigestArticle {
   title: string;
+  description: string;
   link: string;
   source: string;
   track: string;
@@ -76,7 +77,8 @@ function buildEmailHtml(articles: DigestArticle[]): string {
             <span style="font-size:10px;color:#6b7280;">${a.source}</span>
             <span style="font-size:10px;color:#4b5563;margin-left:auto;">${timeAgo}</span>
           </div>
-          <a href="${a.link}" style="color:#f1f5f9;font-size:14px;font-weight:500;text-decoration:none;line-height:1.4;">${a.title}</a>
+          <a href="${a.link}" style="color:#f1f5f9;font-size:14px;font-weight:500;text-decoration:none;line-height:1.4;display:block;margin-bottom:${a.description ? "6px" : "0"};">${a.title}</a>
+          ${a.description ? `<p style="margin:0;font-size:12px;color:#6b7280;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;">${a.description}</p>` : ""}
         </div>`;
     }).join("");
 
@@ -151,7 +153,12 @@ const handler = schedule("0 9 * * *", async () => {
           const priority = scoreArticle(title, description, link, feed.source);
           if (priority === "LOW") continue;
 
-          articles.push({ title, link, source: feed.source, track: feed.track, priority, pubDate });
+          const snippet = (item.contentSnippet || item.content || "")
+            .replace(/<[^>]*>/g, "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .slice(0, 160);
+          articles.push({ title, description: snippet, link, source: feed.source, track: feed.track, priority, pubDate });
         }
       } catch {
         // skip failed feeds
