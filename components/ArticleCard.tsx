@@ -55,15 +55,20 @@ export default function ArticleCard({ article }: { article: Article }) {
       className={`group flex flex-col gap-3 rounded-xl border bg-white/[0.03] p-4 backdrop-blur-sm transition-all duration-200 hover:bg-white/[0.06] hover:shadow-lg ${p.border} ${p.glow}`}
     >
       {/* Top row: priority + track */}
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center gap-2">
         <div
           className={`flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wider ${p.badge}`}
         >
           <span className={`h-1.5 w-1.5 rounded-full ${p.dot}`} />
           {p.label}
         </div>
+        {article.isNew && (
+          <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold tracking-wider text-emerald-400">
+            NEW
+          </span>
+        )}
         <span
-          className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${TRACK_COLORS[article.track]}`}
+          className={`ml-auto rounded-full border px-2 py-0.5 text-[10px] font-medium ${TRACK_COLORS[article.track]}`}
         >
           {article.track}
         </span>

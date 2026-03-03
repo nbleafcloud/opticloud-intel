@@ -15,6 +15,7 @@ export interface Article {
   source: string;
   track: Track;
   priority: Priority;
+  isNew?: boolean;
 }
 
 export interface FeedConfig {
