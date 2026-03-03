@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@netlify/functions": "^5.1.2",
+    "@types/nodemailer": "^7.0.11",
     "next": "^16.1.6",
+    "nodemailer": "^8.0.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "resend": "^6.9.3",

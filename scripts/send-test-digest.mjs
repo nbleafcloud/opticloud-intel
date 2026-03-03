@@ -1,12 +1,12 @@
 /**
- * One-shot test script — sends a sample digest email via Resend.
+ * One-shot test script — sends a sample digest email via Gmail SMTP.
  * Run with: node scripts/send-test-digest.mjs
  *
  * Uses mock articles that mirror real digest output so you can
  * preview the exact email format before tomorrow's 9am UTC send.
  */
 
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -28,11 +28,12 @@ try {
   process.exit(1);
 }
 
-const RESEND_API_KEY = env.RESEND_API_KEY;
+const GMAIL_USER = env.GMAIL_USER;
+const GMAIL_APP_PASSWORD = env.GMAIL_APP_PASSWORD;
 const DIGEST_TO_EMAIL = env.DIGEST_TO_EMAIL;
 
-if (!RESEND_API_KEY || !DIGEST_TO_EMAIL) {
-  console.error("Missing RESEND_API_KEY or DIGEST_TO_EMAIL in .env.local");
+if (!GMAIL_USER || !GMAIL_APP_PASSWORD || !DIGEST_TO_EMAIL) {
+  console.error("Missing GMAIL_USER, GMAIL_APP_PASSWORD, or DIGEST_TO_EMAIL in .env.local");
   process.exit(1);
 }
 
@@ -254,22 +255,25 @@ function buildEmailHtml(articles) {
 }
 
 // ── Send ────────────────────────────────────────────────────────────────────
-const resend = new Resend(RESEND_API_KEY);
-const today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-
-console.log(`Sending test digest to ${DIGEST_TO_EMAIL}...`);
-
-const { data, error } = await resend.emails.send({
-  from: "Opticloud Intel <onboarding@resend.dev>",
-  to: DIGEST_TO_EMAIL,
-  subject: `[TEST] Opticloud Intel: Daily Brief — ${today}`,
-  html: buildEmailHtml(mockArticles),
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
 });
 
-if (error) {
-  console.error("❌ Send failed:", error);
+const today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+console.log(`Sending test digest from ${GMAIL_USER} to ${DIGEST_TO_EMAIL}...`);
+
+try {
+  const info = await transporter.sendMail({
+    from: `"Opticloud Intel" <${GMAIL_USER}>`,
+    to: DIGEST_TO_EMAIL,
+    subject: `[TEST] Opticloud Intel: Daily Brief — ${today}`,
+    html: buildEmailHtml(mockArticles),
+  });
+  console.log(`✅ Test digest sent! Message ID: ${info.messageId}`);
+  console.log(`   Check ${DIGEST_TO_EMAIL} for the preview.`);
+} catch (err) {
+  console.error("❌ Send failed:", err.message);
   process.exit(1);
 }
-
-console.log(`✅ Test digest sent! Email ID: ${data.id}`);
-console.log(`   Check ${DIGEST_TO_EMAIL} for the preview.`);

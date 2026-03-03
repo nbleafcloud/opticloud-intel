@@ -1,5 +1,5 @@
 import { schedule } from "@netlify/functions";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import Parser from "rss-parser";
 import { FEEDS } from "../../lib/feeds.js";
 import { HIGH_KEYWORDS, LOW_KEYWORDS, isAuthoritativeSource } from "../../lib/scoring-rules.js";
@@ -116,10 +116,11 @@ function buildEmailHtml(articles: DigestArticle[]): string {
 }
 
 const handler = schedule("0 9 * * *", async () => {
-  const apiKey = process.env.RESEND_API_KEY;
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailPass = process.env.GMAIL_APP_PASSWORD;
   const toEmail = process.env.DIGEST_TO_EMAIL;
-  if (!apiKey || !toEmail) {
-    console.error("Missing RESEND_API_KEY or DIGEST_TO_EMAIL");
+  if (!gmailUser || !gmailPass || !toEmail) {
+    console.error("Missing GMAIL_USER, GMAIL_APP_PASSWORD, or DIGEST_TO_EMAIL");
     return { statusCode: 500 };
   }
 
@@ -178,19 +179,23 @@ const handler = schedule("0 9 * * *", async () => {
     return { statusCode: 200 };
   }
 
-  const resend = new Resend(apiKey);
-  const today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-
-  const { error } = await resend.emails.send({
-    from: "Opticloud Intel <onboarding@resend.dev>",
-    to: toEmail,
-    cc: ccEmails.length > 0 ? ccEmails : undefined,
-    subject: `Opticloud Intel: Daily Brief — ${today}`,
-    html: buildEmailHtml(articles),
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user: gmailUser, pass: gmailPass },
   });
 
-  if (error) {
-    console.error("Resend error:", error);
+  const today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+  try {
+    await transporter.sendMail({
+      from: `"Opticloud Intel" <${gmailUser}>`,
+      to: toEmail,
+      cc: ccEmails.length > 0 ? ccEmails.join(", ") : undefined,
+      subject: `Opticloud Intel: Daily Brief — ${today}`,
+      html: buildEmailHtml(articles),
+    });
+  } catch (err) {
+    console.error("Gmail send error:", err);
     return { statusCode: 500 };
   }
 
