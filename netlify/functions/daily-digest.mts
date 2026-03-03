@@ -1,5 +1,4 @@
 import { schedule } from "@netlify/functions";
-import nodemailer from "nodemailer";
 import Parser from "rss-parser";
 import { FEEDS } from "../../lib/feeds.js";
 import { HIGH_KEYWORDS, LOW_KEYWORDS, isAuthoritativeSource } from "../../lib/scoring-rules.js";
@@ -116,11 +115,11 @@ function buildEmailHtml(articles: DigestArticle[]): string {
 }
 
 const handler = schedule("0 9 * * *", async () => {
-  const gmailUser = process.env.GMAIL_USER;
-  const gmailPass = process.env.GMAIL_APP_PASSWORD;
+  const brevoKey = process.env.BREVO_API_KEY;
+  const fromEmail = process.env.GMAIL_USER; // sender address verified in Brevo
   const toEmail = process.env.DIGEST_TO_EMAIL;
-  if (!gmailUser || !gmailPass || !toEmail) {
-    console.error("Missing GMAIL_USER, GMAIL_APP_PASSWORD, or DIGEST_TO_EMAIL");
+  if (!brevoKey || !fromEmail || !toEmail) {
+    console.error("Missing BREVO_API_KEY, GMAIL_USER, or DIGEST_TO_EMAIL");
     return { statusCode: 500 };
   }
 
@@ -179,23 +178,29 @@ const handler = schedule("0 9 * * *", async () => {
     return { statusCode: 200 };
   }
 
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: { user: gmailUser, pass: gmailPass },
-  });
-
   const today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-  try {
-    await transporter.sendMail({
-      from: `"Opticloud Intel" <${gmailUser}>`,
-      to: toEmail,
-      cc: ccEmails.length > 0 ? ccEmails.join(", ") : undefined,
+  const toList = [{ email: toEmail }];
+  const ccList = ccEmails.map((e) => ({ email: e }));
+
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "api-key": brevoKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      sender: { name: "Opticloud Intel", email: fromEmail },
+      to: toList,
+      ...(ccList.length > 0 && { cc: ccList }),
       subject: `Opticloud Intel: Daily Brief — ${today}`,
-      html: buildEmailHtml(articles),
-    });
-  } catch (err) {
-    console.error("Gmail send error:", err);
+      htmlContent: buildEmailHtml(articles),
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.error("Brevo send error:", err);
     return { statusCode: 500 };
   }
 

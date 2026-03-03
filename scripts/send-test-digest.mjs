@@ -1,12 +1,11 @@
 /**
- * One-shot test script — sends a sample digest email via Gmail SMTP.
+ * One-shot test script — sends a sample digest email via Brevo API.
  * Run with: node scripts/send-test-digest.mjs
  *
  * Uses mock articles that mirror real digest output so you can
  * preview the exact email format before tomorrow's 9am UTC send.
  */
 
-import nodemailer from "nodemailer";
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -28,12 +27,12 @@ try {
   process.exit(1);
 }
 
-const GMAIL_USER = env.GMAIL_USER;
-const GMAIL_APP_PASSWORD = env.GMAIL_APP_PASSWORD;
+const BREVO_API_KEY = env.BREVO_API_KEY;
+const GMAIL_USER = env.GMAIL_USER; // verified sender in Brevo
 const DIGEST_TO_EMAIL = env.DIGEST_TO_EMAIL;
 
-if (!GMAIL_USER || !GMAIL_APP_PASSWORD || !DIGEST_TO_EMAIL) {
-  console.error("Missing GMAIL_USER, GMAIL_APP_PASSWORD, or DIGEST_TO_EMAIL in .env.local");
+if (!BREVO_API_KEY || !GMAIL_USER || !DIGEST_TO_EMAIL) {
+  console.error("Missing BREVO_API_KEY, GMAIL_USER, or DIGEST_TO_EMAIL in .env.local");
   process.exit(1);
 }
 
@@ -255,25 +254,30 @@ function buildEmailHtml(articles) {
 }
 
 // ── Send ────────────────────────────────────────────────────────────────────
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: { user: GMAIL_USER, pass: GMAIL_APP_PASSWORD },
-});
-
 const today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
 console.log(`Sending test digest from ${GMAIL_USER} to ${DIGEST_TO_EMAIL}...`);
 
-try {
-  const info = await transporter.sendMail({
-    from: `"Opticloud Intel" <${GMAIL_USER}>`,
-    to: DIGEST_TO_EMAIL,
+const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+  method: "POST",
+  headers: {
+    "api-key": BREVO_API_KEY,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    sender: { name: "Opticloud Intel", email: GMAIL_USER },
+    to: [{ email: DIGEST_TO_EMAIL }],
     subject: `[TEST] Opticloud Intel: Daily Brief — ${today}`,
-    html: buildEmailHtml(mockArticles),
-  });
-  console.log(`✅ Test digest sent! Message ID: ${info.messageId}`);
-  console.log(`   Check ${DIGEST_TO_EMAIL} for the preview.`);
-} catch (err) {
-  console.error("❌ Send failed:", err.message);
+    htmlContent: buildEmailHtml(mockArticles),
+  }),
+});
+
+if (!res.ok) {
+  const err = await res.text();
+  console.error("❌ Send failed:", err);
   process.exit(1);
 }
+
+const data = await res.json();
+console.log(`✅ Test digest sent! Message ID: ${data.messageId}`);
+console.log(`   Check ${DIGEST_TO_EMAIL} for the preview.`);
