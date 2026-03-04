@@ -118,6 +118,11 @@ const handler = schedule("0 9 * * *", async () => {
   const brevoKey = process.env.BREVO_API_KEY;
   const fromEmail = process.env.GMAIL_USER; // sender address verified in Brevo
   const toEmail = process.env.DIGEST_TO_EMAIL;
+  console.log("ENV CHECK:", {
+    BREVO_API_KEY: brevoKey ? `set (${brevoKey.length} chars)` : "MISSING",
+    GMAIL_USER: fromEmail || "MISSING",
+    DIGEST_TO_EMAIL: toEmail || "MISSING",
+  });
   if (!brevoKey || !fromEmail || !toEmail) {
     console.error("Missing BREVO_API_KEY, GMAIL_USER, or DIGEST_TO_EMAIL");
     return { statusCode: 500 };
