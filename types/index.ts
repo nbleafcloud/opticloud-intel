@@ -23,3 +23,22 @@ export interface FeedConfig {
   source: string;
   track: Track;
 }
+
+export interface BlogDraft {
+  id: string;
+  status: "draft" | "approved" | "published";
+  title: string;
+  slug: string;
+  metaDescription: string;
+  content: string;
+  track: Track;
+  sourceArticles: Array<{
+    title: string;
+    link: string;
+    source: string;
+  }>;
+  keywords: string[];
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string | null;
+}
