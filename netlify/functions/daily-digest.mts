@@ -107,7 +107,7 @@ function buildEmailHtml(articles: DigestArticle[]): string {
     </div>
     ${sections}
     <div style="margin-top:32px;padding-top:20px;border-top:1px solid #1f1f1f;font-size:11px;color:#374151;text-align:center;">
-      Opticloud Intel · Automated daily digest · <a href="https://playful-douhua-3ed339.netlify.app" style="color:#f97316;text-decoration:none;">View live dashboard →</a>
+      Opticloud Intel · Automated daily digest · <a href="https://newsintel.netlify.app" style="color:#f97316;text-decoration:none;">View live dashboard →</a>
     </div>
   </div>
 </body>

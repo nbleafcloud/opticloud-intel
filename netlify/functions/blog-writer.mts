@@ -302,7 +302,7 @@ const handler = schedule("0 10 * * 1", async () => {
           <div style="font-family:-apple-system,sans-serif;max-width:500px;margin:0 auto;padding:32px;background:#0a0a0f;color:#f1f5f9;">
             <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#f97316;margin-bottom:8px;">OPTICLOUD BLOG</div>
             <h1 style="font-size:20px;margin:0 0 16px;">${draftsCreated} new draft${draftsCreated > 1 ? "s" : ""} ready for review</h1>
-            <p style="color:#9ca3af;font-size:14px;">Head to the <a href="https://playful-douhua-3ed339.netlify.app/drafts" style="color:#f97316;">Drafts dashboard</a> to review, edit, and approve.</p>
+            <p style="color:#9ca3af;font-size:14px;">Head to the <a href="https://newsintel.netlify.app/drafts" style="color:#f97316;">Drafts dashboard</a> to review, edit, and approve.</p>
             ${errorNote}
           </div>`,
       }),
