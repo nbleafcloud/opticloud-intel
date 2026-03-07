@@ -9,12 +9,16 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@netlify/blobs": "^10.7.0",
     "@netlify/functions": "^5.1.2",
     "@types/nodemailer": "^7.0.11",
     "next": "^16.1.6",
     "nodemailer": "^8.0.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "resend": "^6.9.3",
     "rss-parser": "^3.13.0"
   },
