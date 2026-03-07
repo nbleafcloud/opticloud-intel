@@ -59,3 +59,60 @@ body {
   background: rgba(16, 185, 129, 0.2);
   color: #fff;
 }
+
+/* Blog post markdown styling */
+.prose-custom h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+}
+.prose-custom h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+.prose-custom p {
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 1rem;
+}
+.prose-custom a {
+  color: #f97316;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose-custom a:hover {
+  color: #fb923c;
+}
+.prose-custom ul,
+.prose-custom ol {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+.prose-custom li {
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  line-height: 1.75;
+}
+.prose-custom blockquote {
+  border-left: 3px solid rgba(255, 255, 255, 0.1);
+  padding-left: 1rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+  margin: 1.5rem 0;
+}
+.prose-custom strong {
+  color: rgba(255, 255, 255, 0.85);
+}
+.prose-custom code {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
