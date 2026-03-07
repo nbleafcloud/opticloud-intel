@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDraft, saveDraft } from "@/lib/blobs";
+import { requireAuth, isValidDraftId } from "@/lib/auth";
 
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const denied = requireAuth(request);
+  if (denied) return denied;
+
   const { id } = await params;
+  if (!isValidDraftId(id))
+    return NextResponse.json({ error: "Invalid draft ID" }, { status: 400 });
   try {
     const draft = await getDraft(id);
     if (!draft)

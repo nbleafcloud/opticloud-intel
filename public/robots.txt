@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Allow: /blog/
+Disallow: /api/
+Disallow: /drafts/
+
+Sitemap: https://newsintel.netlify.app/sitemap.xml

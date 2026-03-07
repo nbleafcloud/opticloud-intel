@@ -4,14 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeSanitize from "rehype-sanitize";
+import { TRACK_TEXT_COLORS } from "@/types";
 import type { BlogDraft } from "@/types";
-
-const TRACK_COLORS: Record<string, string> = {
-  "Energy & Data Centers": "text-blue-400",
-  "Cloud Computing": "text-purple-400",
-  "Indigenous & Conservation": "text-teal-400",
-  "Environmental AI Governance": "text-orange-400",
-};
 
 export default function DraftEditor({
   draft: initial,
@@ -107,7 +102,7 @@ export default function DraftEditor({
     }
   }
 
-  const trackColor = TRACK_COLORS[draft.track] || "text-white/40";
+  const trackColor = TRACK_TEXT_COLORS[draft.track] || "text-white/40";
 
   return (
     <div>
@@ -129,7 +124,7 @@ export default function DraftEditor({
 
         <div className="ml-auto flex items-center gap-2">
           {message && (
-            <span className="text-xs text-emerald-400">{message}</span>
+            <span className={`text-xs ${message.toLowerCase().includes("fail") ? "text-red-400" : "text-emerald-400"}`}>{message}</span>
           )}
           <button
             onClick={handleSave}
@@ -238,7 +233,10 @@ export default function DraftEditor({
             Preview
           </label>
           <div className="bg-white/[0.02] border border-white/8 rounded-lg px-6 py-4 h-[500px] overflow-y-auto prose-custom">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeSanitize]}
+            >
               {draft.content}
             </ReactMarkdown>
           </div>

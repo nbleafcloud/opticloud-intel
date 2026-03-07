@@ -1,4 +1,4 @@
-// Shared scoring constants — imported by both lib/scorer.ts and netlify/functions/daily-digest.mts
+// Shared scoring logic — imported by lib/scorer.ts, daily-digest.mts, and blog-writer.mts
 
 export const HIGH_KEYWORDS = [
   "itu", "iso", "l.1801", "regulation", "mandate", "mandates", "mandated",
@@ -33,4 +33,25 @@ export const AUTHORITATIVE_DOMAINS = [
 export function isAuthoritativeSource(link: string, source: string): boolean {
   const combined = `${link} ${source}`.toLowerCase();
   return AUTHORITATIVE_DOMAINS.some((domain) => combined.includes(domain));
+}
+
+export function scoreArticle(
+  title: string,
+  description: string,
+  link: string,
+  source: string
+): "HIGH" | "MEDIUM" | "LOW" {
+  if (isAuthoritativeSource(link, source)) return "HIGH";
+  const text = `${title} ${description}`.toLowerCase();
+  if (HIGH_KEYWORDS.some((k) => text.includes(k))) return "HIGH";
+  if (LOW_KEYWORDS.some((k) => text.includes(k))) return "LOW";
+  return "MEDIUM";
+}
+
+export function normalizeTitle(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }

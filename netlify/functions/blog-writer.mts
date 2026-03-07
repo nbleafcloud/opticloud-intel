@@ -3,11 +3,8 @@ import { getStore } from "@netlify/blobs";
 import Anthropic from "@anthropic-ai/sdk";
 import Parser from "rss-parser";
 import { FEEDS } from "../../lib/feeds.js";
-import {
-  HIGH_KEYWORDS,
-  LOW_KEYWORDS,
-  isAuthoritativeSource,
-} from "../../lib/scoring-rules.js";
+import { scoreArticle, normalizeTitle } from "../../lib/scoring-rules.js";
+import { sendBrevoEmail } from "../../lib/email.js";
 
 const WRITER_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -19,27 +16,6 @@ interface SourceArticle {
   track: string;
   priority: "HIGH" | "MEDIUM" | "LOW";
   pubDate: string;
-}
-
-function scoreArticle(
-  title: string,
-  description: string,
-  link: string,
-  source: string
-): "HIGH" | "MEDIUM" | "LOW" {
-  if (isAuthoritativeSource(link, source)) return "HIGH";
-  const text = `${title} ${description}`.toLowerCase();
-  if (HIGH_KEYWORDS.some((k) => text.includes(k))) return "HIGH";
-  if (LOW_KEYWORDS.some((k) => text.includes(k))) return "LOW";
-  return "MEDIUM";
-}
-
-function normalizeTitle(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
 }
 
 function slugify(text: string): string {
@@ -96,7 +72,7 @@ async function generateDraft(
   try {
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 2000,
+      max_tokens: 4000,
       messages: [
         {
           role: "user",
@@ -106,8 +82,15 @@ async function generateDraft(
       system: BLOG_PROMPT,
     });
 
-    const text =
+    let text =
       response.content[0].type === "text" ? response.content[0].text : "";
+
+    // Strip markdown code fences if Claude wrapped the JSON
+    text = text.trim();
+    if (text.startsWith("```")) {
+      text = text.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+    }
+
     const parsed = JSON.parse(text);
 
     if (!parsed.title || !parsed.content) {
@@ -271,7 +254,19 @@ const handler = schedule("0 10 * * 1", async () => {
       publishedAt: null,
     };
 
-    await store.setJSON(draftId, draft);
+    // Retry blob write once on failure
+    try {
+      await store.setJSON(draftId, draft);
+    } catch (writeErr) {
+      console.warn(`Blob write failed for "${result.title}", retrying...`, writeErr);
+      try {
+        await store.setJSON(draftId, draft);
+      } catch (finalErr) {
+        console.error(`Blob write failed after retry for "${result.title}"`, finalErr);
+        errors.push(`${track} (storage error)`);
+        continue;
+      }
+    }
     draftsCreated++;
     console.log(`Draft created: "${result.title}" [${track}]`);
   }
@@ -288,25 +283,19 @@ const handler = schedule("0 10 * * 1", async () => {
         ? `<p style="color:#f87171;font-size:13px;">Failed to generate drafts for: ${errors.join(", ")}</p>`
         : "";
 
-    await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        "api-key": brevoKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        sender: { name: "Opticloud Intel", email: fromEmail },
-        to: [{ email: toEmail }],
-        subject: `Opticloud Blog: ${draftsCreated} New Draft${draftsCreated > 1 ? "s" : ""} Ready — ${today}`,
-        htmlContent: `
-          <div style="font-family:-apple-system,sans-serif;max-width:500px;margin:0 auto;padding:32px;background:#0a0a0f;color:#f1f5f9;">
-            <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#f97316;margin-bottom:8px;">OPTICLOUD BLOG</div>
-            <h1 style="font-size:20px;margin:0 0 16px;">${draftsCreated} new draft${draftsCreated > 1 ? "s" : ""} ready for review</h1>
-            <p style="color:#9ca3af;font-size:14px;">Head to the <a href="https://newsintel.netlify.app/drafts" style="color:#f97316;">Drafts dashboard</a> to review, edit, and approve.</p>
-            ${errorNote}
-          </div>`,
-      }),
+    const sent = await sendBrevoEmail(brevoKey, {
+      sender: { name: "Opticloud Intel", email: fromEmail },
+      to: [{ email: toEmail }],
+      subject: `Opticloud Blog: ${draftsCreated} New Draft${draftsCreated > 1 ? "s" : ""} Ready — ${today}`,
+      htmlContent: `
+        <div style="font-family:-apple-system,sans-serif;max-width:500px;margin:0 auto;padding:32px;background:#0a0a0f;color:#f1f5f9;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#f97316;margin-bottom:8px;">OPTICLOUD BLOG</div>
+          <h1 style="font-size:20px;margin:0 0 16px;">${draftsCreated} new draft${draftsCreated > 1 ? "s" : ""} ready for review</h1>
+          <p style="color:#9ca3af;font-size:14px;">Head to the <a href="https://newsintel.netlify.app/drafts" style="color:#f97316;">Drafts dashboard</a> to review, edit, and approve.</p>
+          ${errorNote}
+        </div>`,
     });
+    if (!sent) console.error("Failed to send blog notification email after retries");
   }
 
   console.log(

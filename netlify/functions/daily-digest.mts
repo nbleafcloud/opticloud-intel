@@ -1,21 +1,10 @@
 import { schedule } from "@netlify/functions";
 import Parser from "rss-parser";
 import { FEEDS } from "../../lib/feeds.js";
-import { HIGH_KEYWORDS, LOW_KEYWORDS, isAuthoritativeSource } from "../../lib/scoring-rules.js";
+import { scoreArticle, normalizeTitle } from "../../lib/scoring-rules.js";
+import { sendBrevoEmail } from "../../lib/email.js";
 
 const DIGEST_MAX_AGE_MS = 48 * 60 * 60 * 1000; // 48 hours
-
-function scoreArticle(title: string, description: string, link: string, source: string): "HIGH" | "MEDIUM" | "LOW" {
-  if (isAuthoritativeSource(link, source)) return "HIGH";
-  const text = `${title} ${description}`.toLowerCase();
-  if (HIGH_KEYWORDS.some((k) => text.includes(k))) return "HIGH";
-  if (LOW_KEYWORDS.some((k) => text.includes(k))) return "LOW";
-  return "MEDIUM";
-}
-
-function normalizeTitle(title: string): string {
-  return title.toLowerCase().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ").trim();
-}
 
 interface DigestArticle {
   title: string;
@@ -183,24 +172,16 @@ const handler = schedule("0 9 * * *", async () => {
   const toList = [{ email: toEmail }];
   const ccList = ccEmails.map((e) => ({ email: e }));
 
-  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
-    method: "POST",
-    headers: {
-      "api-key": brevoKey,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      sender: { name: "Opticloud Intel", email: fromEmail },
-      to: toList,
-      ...(ccList.length > 0 && { cc: ccList }),
-      subject: `Opticloud Intel: Daily Brief — ${today}`,
-      htmlContent: buildEmailHtml(articles),
-    }),
+  const sent = await sendBrevoEmail(brevoKey, {
+    sender: { name: "Opticloud Intel", email: fromEmail },
+    to: toList,
+    ...(ccList.length > 0 && { cc: ccList }),
+    subject: `Opticloud Intel: Daily Brief — ${today}`,
+    htmlContent: buildEmailHtml(articles),
   });
 
-  if (!res.ok) {
-    const err = await res.text();
-    console.error("Brevo send error:", err);
+  if (!sent) {
+    console.error("Failed to send digest email after retries");
     return { statusCode: 500 };
   }
 

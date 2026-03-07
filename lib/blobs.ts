@@ -15,14 +15,17 @@ function getDraftsStore() {
 export async function listDrafts(status?: BlogDraft["status"]): Promise<BlogDraft[]> {
   const store = getDraftsStore();
   const { blobs } = await store.list();
-  const drafts: BlogDraft[] = [];
 
-  for (const blob of blobs) {
-    const data = (await store.get(blob.key, { type: "json" })) as BlogDraft | null;
-    if (data && (!status || data.status === status)) {
-      drafts.push(data);
-    }
-  }
+  // Fetch all blobs in parallel instead of sequentially (N+1 fix)
+  const results = await Promise.all(
+    blobs.map((blob) =>
+      store.get(blob.key, { type: "json" }).catch(() => null) as Promise<BlogDraft | null>
+    )
+  );
+
+  const drafts = results.filter(
+    (data): data is BlogDraft => data !== null && (!status || data.status === status)
+  );
 
   drafts.sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()

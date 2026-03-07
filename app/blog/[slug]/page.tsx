@@ -1,8 +1,11 @@
 import { getDraftBySlug } from "@/lib/blobs";
 import Header from "@/components/Header";
 import BlogContent from "@/components/BlogContent";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+
+const SITE_URL = "https://newsintel.netlify.app";
 
 export const revalidate = 60;
 
@@ -19,6 +22,9 @@ export async function generateMetadata({
     title: `${post.title} | Opticloud Blog`,
     description: post.metaDescription,
     keywords: post.keywords.join(", "),
+    alternates: {
+      canonical: `${SITE_URL}/blog/${slug}`,
+    },
     openGraph: {
       title: post.title,
       description: post.metaDescription,
@@ -64,6 +70,17 @@ export default async function BlogPostPage({
       url: "https://www.opticloud.com",
     },
     keywords: post.keywords.join(", "),
+    mainEntityOfPage: `${SITE_URL}/blog/${slug}`,
+  };
+
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Blog", item: `${SITE_URL}/blog` },
+      { "@type": "ListItem", position: 3, name: post.title },
+    ],
   };
 
   return (
@@ -82,6 +99,10 @@ export default async function BlogPostPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
       />
 
       <article className="relative mx-auto max-w-3xl px-6 py-10">
@@ -140,12 +161,12 @@ export default async function BlogPostPage({
 
         {/* Back link */}
         <div className="mt-12">
-          <a
+          <Link
             href="/blog"
             className="text-sm text-white/40 hover:text-white/70 transition"
           >
             &larr; Back to blog
-          </a>
+          </Link>
         </div>
       </article>
     </div>

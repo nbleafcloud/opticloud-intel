@@ -1,16 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { TRACK_BADGE_COLORS } from "@/types";
 import type { BlogDraft } from "@/types";
-
-const TRACK_COLORS: Record<string, string> = {
-  "Energy & Data Centers": "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  "Cloud Computing": "bg-purple-500/10 text-purple-400 border-purple-500/20",
-  "Indigenous & Conservation":
-    "bg-teal-500/10 text-teal-400 border-teal-500/20",
-  "Environmental AI Governance":
-    "bg-orange-500/10 text-orange-400 border-orange-500/20",
-};
 
 const STATUS_STYLES = {
   draft: "bg-white/5 text-white/50 border-white/10",
@@ -20,7 +12,7 @@ const STATUS_STYLES = {
 
 export default function DraftCard({ draft }: { draft: BlogDraft }) {
   const trackColor =
-    TRACK_COLORS[draft.track] || "bg-white/5 text-white/40 border-white/10";
+    TRACK_BADGE_COLORS[draft.track] || "bg-white/5 text-white/40 border-white/10";
   const statusStyle = STATUS_STYLES[draft.status];
   const date = new Date(draft.createdAt).toLocaleDateString("en-US", {
     month: "short",
