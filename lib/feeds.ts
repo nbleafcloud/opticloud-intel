@@ -1,16 +1,12 @@
+import type { Track } from "../types/index.js";
+
 export interface FeedConfig {
   url: string;
   source: string;
-  track: TrackName;
+  track: Track;
 }
 
-export type TrackName =
-  | "Energy & Data Centers"
-  | "Cloud Computing"
-  | "Indigenous & Conservation"
-  | "Environmental AI Governance";
-
-export const TRACKS: TrackName[] = [
+export const TRACKS: Track[] = [
   "Energy & Data Centers",
   "Cloud Computing",
   "Indigenous & Conservation",

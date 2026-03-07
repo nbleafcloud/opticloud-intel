@@ -5,9 +5,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-const SITE_URL = "https://newsintel.netlify.app";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://newsintel.netlify.app";
 
-export const revalidate = 60;
+export const revalidate = 3600; // refresh every hour — blog content changes weekly at most
 
 export async function generateMetadata({
   params,

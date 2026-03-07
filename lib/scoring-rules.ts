@@ -35,6 +35,12 @@ export function isAuthoritativeSource(link: string, source: string): boolean {
   return AUTHORITATIVE_DOMAINS.some((domain) => combined.includes(domain));
 }
 
+function matchesKeyword(text: string, keyword: string): boolean {
+  // Use word boundary for single words, exact match for phrases
+  if (keyword.includes(" ")) return text.includes(keyword);
+  return new RegExp(`\\b${keyword}\\b`).test(text);
+}
+
 export function scoreArticle(
   title: string,
   description: string,
@@ -43,8 +49,8 @@ export function scoreArticle(
 ): "HIGH" | "MEDIUM" | "LOW" {
   if (isAuthoritativeSource(link, source)) return "HIGH";
   const text = `${title} ${description}`.toLowerCase();
-  if (HIGH_KEYWORDS.some((k) => text.includes(k))) return "HIGH";
-  if (LOW_KEYWORDS.some((k) => text.includes(k))) return "LOW";
+  if (HIGH_KEYWORDS.some((k) => matchesKeyword(text, k))) return "HIGH";
+  if (LOW_KEYWORDS.some((k) => matchesKeyword(text, k))) return "LOW";
   return "MEDIUM";
 }
 

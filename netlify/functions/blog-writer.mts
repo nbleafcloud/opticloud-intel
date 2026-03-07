@@ -1,22 +1,13 @@
 import { schedule } from "@netlify/functions";
 import { getStore } from "@netlify/blobs";
 import Anthropic from "@anthropic-ai/sdk";
-import Parser from "rss-parser";
-import { FEEDS } from "../../lib/feeds.js";
-import { scoreArticle, normalizeTitle } from "../../lib/scoring-rules.js";
+import { normalizeTitle } from "../../lib/scoring-rules.js";
 import { sendBrevoEmail } from "../../lib/email.js";
+import { fetchAndScoreArticles, type FetchedArticle } from "../../lib/feed-fetcher.js";
 
 const WRITER_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-interface SourceArticle {
-  title: string;
-  description: string;
-  link: string;
-  source: string;
-  track: string;
-  priority: "HIGH" | "MEDIUM" | "LOW";
-  pubDate: string;
-}
+type SourceArticle = FetchedArticle;
 
 function slugify(text: string): string {
   return text
@@ -71,7 +62,7 @@ async function generateDraft(
 
   try {
     const response = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
+      model: process.env.CLAUDE_MODEL || "claude-haiku-4-5-20251001",
       max_tokens: 4000,
       messages: [
         {
@@ -133,53 +124,13 @@ const handler = schedule("0 10 * * 1", async () => {
       ? getStore({ name: "blog-drafts", siteID, token: blobToken })
       : getStore("blog-drafts"); // fallback for auto-injected context
 
-  const parser = new Parser({ timeout: 10000 });
-
-  // 1. Fetch and score articles (same pattern as daily-digest)
-  const articles: SourceArticle[] = [];
-  const seenTitles = new Set<string>();
+  // 1. Fetch and score articles using shared feed-fetcher
   const now = Date.now();
-
-  await Promise.allSettled(
-    FEEDS.map(async (feed) => {
-      try {
-        const result = await parser.parseURL(feed.url);
-        for (const item of (result.items || []).slice(0, 15)) {
-          const pubDate =
-            item.pubDate || item.isoDate || new Date().toISOString();
-          const age = now - new Date(pubDate).getTime();
-          if (age > WRITER_MAX_AGE_MS) continue;
-
-          const title = item.title || "";
-          const titleKey = normalizeTitle(title);
-          if (seenTitles.has(titleKey)) continue;
-          seenTitles.add(titleKey);
-
-          const description = (item.contentSnippet || item.content || "")
-            .replace(/<[^>]*>/g, "")
-            .replace(/\s+/g, " ")
-            .trim()
-            .slice(0, 300);
-          const link = item.link || feed.url;
-          const priority = scoreArticle(title, description, link, feed.source);
-
-          if (priority === "HIGH") {
-            articles.push({
-              title,
-              description,
-              link,
-              source: feed.source,
-              track: feed.track,
-              priority,
-              pubDate,
-            });
-          }
-        }
-      } catch {
-        // skip failed feeds
-      }
-    })
-  );
+  const articles = await fetchAndScoreArticles({
+    maxAgeMs: WRITER_MAX_AGE_MS,
+    minPriority: "HIGH",
+    descriptionMaxLength: 300,
+  });
 
   if (articles.length === 0) {
     console.log(

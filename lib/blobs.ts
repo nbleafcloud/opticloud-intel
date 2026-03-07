@@ -17,15 +17,16 @@ export async function listDrafts(status?: BlogDraft["status"]): Promise<BlogDraf
   const { blobs } = await store.list();
 
   // Fetch all blobs in parallel instead of sequentially (N+1 fix)
-  const results = await Promise.all(
+  const results = await Promise.allSettled(
     blobs.map((blob) =>
-      store.get(blob.key, { type: "json" }).catch(() => null) as Promise<BlogDraft | null>
+      store.get(blob.key, { type: "json" }) as Promise<BlogDraft | null>
     )
   );
 
-  const drafts = results.filter(
-    (data): data is BlogDraft => data !== null && (!status || data.status === status)
-  );
+  const drafts = results
+    .filter((r): r is PromiseFulfilledResult<BlogDraft | null> => r.status === "fulfilled")
+    .map(r => r.value)
+    .filter((data): data is BlogDraft => data !== null && (!status || data.status === status));
 
   drafts.sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()

@@ -3,7 +3,7 @@ import BlogPostCard from "@/components/BlogPostCard";
 import { listDrafts } from "@/lib/blobs";
 import type { BlogDraft } from "@/types";
 
-export const revalidate = 60; // refresh every minute
+export const revalidate = 3600; // refresh every hour — blog content changes weekly at most
 
 export const metadata = {
   title: "Opticloud Blog — Cloud Sustainability Insights",

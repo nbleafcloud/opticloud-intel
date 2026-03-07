@@ -1,20 +1,11 @@
 import { schedule } from "@netlify/functions";
-import Parser from "rss-parser";
-import { FEEDS } from "../../lib/feeds.js";
-import { scoreArticle, normalizeTitle } from "../../lib/scoring-rules.js";
-import { sendBrevoEmail } from "../../lib/email.js";
+import { sendBrevoEmail, escapeHtml } from "../../lib/email.js";
+import { fetchAndScoreArticles, type FetchedArticle } from "../../lib/feed-fetcher.js";
+import type { Priority } from "../../types/index.js";
 
 const DIGEST_MAX_AGE_MS = 48 * 60 * 60 * 1000; // 48 hours
 
-interface DigestArticle {
-  title: string;
-  description: string;
-  link: string;
-  source: string;
-  track: string;
-  priority: "HIGH" | "MEDIUM" | "LOW";
-  pubDate: string;
-}
+type DigestArticle = FetchedArticle;
 
 const TRACK_COLORS: Record<string, string> = {
   "Energy & Data Centers": "#3b82f6",
@@ -23,7 +14,7 @@ const TRACK_COLORS: Record<string, string> = {
   "Environmental AI Governance": "#f97316",
 };
 
-const PRIORITY_COLORS = {
+const PRIORITY_COLORS: Record<Priority, { bg: string; border: string; text: string; label: string }> = {
   HIGH: { bg: "#450a0a", border: "#ef4444", text: "#fca5a5", label: "🔴 HIGH" },
   MEDIUM: { bg: "#451a03", border: "#f59e0b", text: "#fcd34d", label: "🟡 MED" },
   LOW: { bg: "#052e16", border: "#22c55e", text: "#86efac", label: "🟢 LOW" },
@@ -62,11 +53,11 @@ function buildEmailHtml(articles: DigestArticle[]): string {
         <div style="margin-bottom:12px;padding:14px 16px;background:#0f0f0f;border:1px solid ${p.border}33;border-left:3px solid ${p.border};border-radius:8px;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
             <span style="font-size:10px;font-weight:700;letter-spacing:0.08em;padding:2px 8px;border-radius:999px;background:${p.bg};color:${p.text};border:1px solid ${p.border}44;">${p.label}</span>
-            <span style="font-size:10px;color:#6b7280;">${a.source}</span>
+            <span style="font-size:10px;color:#6b7280;">${escapeHtml(a.source)}</span>
             <span style="font-size:10px;color:#4b5563;margin-left:auto;">${timeAgo}</span>
           </div>
-          <a href="${a.link}" style="color:#f1f5f9;font-size:14px;font-weight:500;text-decoration:none;line-height:1.4;display:block;margin-bottom:${a.description ? "6px" : "0"};">${a.title}</a>
-          ${a.description ? `<p style="margin:0;font-size:12px;color:#6b7280;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;">${a.description}</p>` : ""}
+          <a href="${a.link}" style="color:#f1f5f9;font-size:14px;font-weight:500;text-decoration:none;line-height:1.4;display:block;margin-bottom:${a.description ? "6px" : "0"};">${escapeHtml(a.title)}</a>
+          ${a.description ? `<p style="margin:0;font-size:12px;color:#6b7280;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;">${escapeHtml(a.description)}</p>` : ""}
         </div>`;
     }).join("");
 
@@ -117,43 +108,11 @@ const handler = schedule("0 9 * * *", async () => {
     ? process.env.DIGEST_CC_EMAILS.split(",").map((e) => e.trim()).filter(Boolean)
     : [];
 
-  const parser = new Parser({ timeout: 10000 });
-  const articles: DigestArticle[] = [];
-  const seenTitles = new Set<string>();
-  const now = Date.now();
-
-  await Promise.allSettled(
-    FEEDS.map(async (feed) => {
-      try {
-        const result = await parser.parseURL(feed.url);
-        for (const item of (result.items || []).slice(0, 15)) {
-          const pubDate = item.pubDate || item.isoDate || new Date().toISOString();
-          const age = now - new Date(pubDate).getTime();
-          // Digest only covers last 48 hours
-          if (age > DIGEST_MAX_AGE_MS) continue;
-
-          const title = item.title || "";
-          const titleKey = normalizeTitle(title);
-          if (seenTitles.has(titleKey)) continue;
-          seenTitles.add(titleKey);
-
-          const description = item.contentSnippet || item.content || "";
-          const link = item.link || feed.url;
-          const priority = scoreArticle(title, description, link, feed.source);
-          if (priority === "LOW") continue;
-
-          const snippet = (item.contentSnippet || item.content || "")
-            .replace(/<[^>]*>/g, "")
-            .replace(/\s+/g, " ")
-            .trim()
-            .slice(0, 160);
-          articles.push({ title, description: snippet, link, source: feed.source, track: feed.track, priority, pubDate });
-        }
-      } catch {
-        // skip failed feeds
-      }
-    })
-  );
+  const articles: FetchedArticle[] = await fetchAndScoreArticles({
+    maxAgeMs: DIGEST_MAX_AGE_MS,
+    minPriority: "MEDIUM",
+    descriptionMaxLength: 160,
+  });
 
   // Sort: HIGH first, then by date
   articles.sort((a, b) => {

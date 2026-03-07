@@ -35,13 +35,15 @@ const TRACK_COLORS: Record<Track, string> = {
 };
 
 function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "unknown";
+  const diff = Date.now() - date.getTime();
   const h = Math.floor(diff / 3_600_000);
   const d = Math.floor(diff / 86_400_000);
   if (h < 1) return "just now";
   if (h < 24) return `${h}h ago`;
   if (d < 7) return `${d}d ago`;
-  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 export default function ArticleCard({ article }: { article: Article }) {
