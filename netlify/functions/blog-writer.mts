@@ -71,7 +71,7 @@ async function generateDraft(
 
   try {
     const response = await anthropic.messages.create({
-      model: "claude-3-5-haiku-20241022",
+      model: "claude-haiku-4-5-20251001",
       max_tokens: 4000,
       messages: [
         {
