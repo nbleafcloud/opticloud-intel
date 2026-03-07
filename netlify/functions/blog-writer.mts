@@ -123,7 +123,16 @@ const handler = schedule("0 10 * * 1", async () => {
   }
 
   const anthropic = new Anthropic({ apiKey: anthropicKey });
-  const store = getStore("blog-drafts");
+
+  // Use explicit credentials so blobs work in all invocation contexts
+  // (scheduled, manual "Run now", CLI invoke, etc.)
+  const siteID = process.env.SITE_ID;
+  const blobToken = process.env.NETLIFY_API_TOKEN;
+  const store =
+    siteID && blobToken
+      ? getStore({ name: "blog-drafts", siteID, token: blobToken })
+      : getStore("blog-drafts"); // fallback for auto-injected context
+
   const parser = new Parser({ timeout: 10000 });
 
   // 1. Fetch and score articles (same pattern as daily-digest)
