@@ -1,5 +1,6 @@
 import Header from "@/components/Header";
 import DraftCard from "@/components/DraftCard";
+import NewDraftForm from "@/components/NewDraftForm";
 import { listDrafts } from "@/lib/blobs";
 import type { BlogDraft } from "@/types";
 
@@ -41,6 +42,10 @@ export default async function DraftsPage() {
             <span>{approvedCount} approved</span>
             <span>{publishedCount} published</span>
           </div>
+        </div>
+
+        <div className="mb-6">
+          <NewDraftForm />
         </div>
 
         {drafts.length === 0 ? (
