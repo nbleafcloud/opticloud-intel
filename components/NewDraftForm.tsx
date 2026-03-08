@@ -29,8 +29,14 @@ export default function NewDraftForm() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Generation failed");
+        let errorMessage = "Generation failed";
+        try {
+          const data = await res.json();
+          errorMessage = data.error || errorMessage;
+        } catch {
+          // response body wasn't JSON
+        }
+        throw new Error(errorMessage);
       }
 
       const { id } = await res.json();
@@ -71,10 +77,11 @@ export default function NewDraftForm() {
       </div>
 
       <div>
-        <label className="text-[10px] text-white/30 uppercase tracking-wider block mb-1">
+        <label htmlFor="draft-topic" className="text-[10px] text-white/30 uppercase tracking-wider block mb-1">
           Topic / Title
         </label>
         <input
+          id="draft-topic"
           type="text"
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
@@ -86,10 +93,11 @@ export default function NewDraftForm() {
       </div>
 
       <div>
-        <label className="text-[10px] text-white/30 uppercase tracking-wider block mb-1">
+        <label htmlFor="draft-angle" className="text-[10px] text-white/30 uppercase tracking-wider block mb-1">
           Angle
         </label>
         <input
+          id="draft-angle"
           type="text"
           value={angle}
           onChange={(e) => setAngle(e.target.value)}
@@ -101,10 +109,11 @@ export default function NewDraftForm() {
       </div>
 
       <div>
-        <label className="text-[10px] text-white/30 uppercase tracking-wider block mb-1">
+        <label htmlFor="draft-arguments" className="text-[10px] text-white/30 uppercase tracking-wider block mb-1">
           Key Arguments
         </label>
         <textarea
+          id="draft-arguments"
           value={keyArguments}
           onChange={(e) => setKeyArguments(e.target.value)}
           maxLength={1000}
@@ -116,10 +125,11 @@ export default function NewDraftForm() {
       </div>
 
       <div>
-        <label className="text-[10px] text-white/30 uppercase tracking-wider block mb-1">
+        <label htmlFor="draft-track" className="text-[10px] text-white/30 uppercase tracking-wider block mb-1">
           Track
         </label>
         <select
+          id="draft-track"
           value={track}
           onChange={(e) => setTrack(e.target.value as Track)}
           className="w-full bg-white/[0.03] border border-white/8 rounded-lg px-3 py-2 text-sm text-white/70 outline-none focus:border-white/20 transition"

@@ -116,21 +116,32 @@ Write a compelling, data-driven post that positions OptiCloud's Digital Sanitati
       );
     }
 
+    // Validate AI-generated fields (same limits as PUT /api/drafts/[id])
+    const title = String(parsed.title).slice(0, 200);
+    const content = String(parsed.content).slice(0, 50000);
+    const metaDescription = String(parsed.metaDescription || "").slice(0, 300);
+    const keywords = Array.isArray(parsed.keywords)
+      ? parsed.keywords.filter((k: unknown) => typeof k === "string").slice(0, 20) as string[]
+      : [];
+
+    // Always slugify to ensure valid ID characters
+    const slug = slugify(parsed.slug || parsed.title);
     const now = Date.now();
-    const draftId = `draft-${now}-${parsed.slug || slugify(parsed.title)}`;
+    const nowIso = new Date(now).toISOString();
+    const draftId = `draft-${now}-${slug}`;
 
     const draft: BlogDraft = {
       id: draftId,
       status: "draft",
-      title: parsed.title,
-      slug: parsed.slug || slugify(parsed.title),
-      metaDescription: parsed.metaDescription || "",
-      content: parsed.content,
+      title,
+      slug,
+      metaDescription,
+      content,
       track: track as Track,
       sourceArticles: [],
-      keywords: parsed.keywords || [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      keywords,
+      createdAt: nowIso,
+      updatedAt: nowIso,
       publishedAt: null,
     };
 
