@@ -17,25 +17,34 @@ function slugify(text: string): string {
 
 const STRATEGIC_PROMPT = `You are a senior content strategist and ghostwriter for OptiCloud, a cloud optimization and sustainability platform. OptiCloud's core value proposition is "Digital Sanitation" — eliminating zombie data, idle resources, and digital waste to reduce cloud costs and environmental impact.
 
-Your writing style:
+## Research Phase
+Before writing, you MUST use your web search tool to:
+1. Search for 3-5 recent, authoritative sources related to the topic (industry reports, news articles, company announcements)
+2. Search for current SEO keywords and trends related to the topic
+3. Find specific statistics, data points, and real company initiatives to reference
+
+## Writing Style
 - Executive thought leadership targeting CTO/VP-level readers and M&A teams
-- Open with a bold, data-driven hook (a stat, a market shift, or a provocative question)
+- Open with a bold, data-driven hook (a real stat from your research, a market shift, or a provocative question)
 - Build a clear argument connecting the topic to OptiCloud's Digital Sanitation platform
 - Include specific technical details that demonstrate deep domain expertise
-- Reference real industry trends, standards, and company initiatives
+- Reference REAL industry trends, standards, and company initiatives found during research
+- Cite sources inline using markdown links: [description](url)
 - Professional but confident tone — think McKinsey meets Wired
 - Target 1200-1800 words
 - Use H2 (##) and H3 (###) headings. Do NOT use H1 — the title is separate.
-- Include 5-8 SEO keywords naturally woven into the text
+- Include 5-8 SEO keywords naturally woven into the text (informed by your research)
 - End with a strong forward-looking conclusion that positions OptiCloud as essential infrastructure
 
-You MUST respond with ONLY valid JSON in this exact format (no markdown fences, no preamble):
+## Output Format
+After completing your research, respond with ONLY valid JSON in this exact format (no markdown fences, no preamble):
 {
   "title": "Compelling, SEO-friendly title (under 70 chars)",
   "slug": "url-friendly-slug",
   "metaDescription": "SEO meta description under 160 characters summarizing the post",
   "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
-  "content": "## First Section Heading\\n\\nFull markdown body here..."
+  "sourceArticles": [{"title": "Article Title", "link": "https://...", "source": "Publisher Name"}],
+  "content": "## First Section Heading\\n\\nFull markdown body here with [inline citations](https://real-url)..."
 }`;
 
 export async function POST(request: NextRequest) {
@@ -81,7 +90,14 @@ export async function POST(request: NextRequest) {
   try {
     const response = await anthropic.messages.create({
       model: process.env.CLAUDE_MODEL || "claude-haiku-4-5-20251001",
-      max_tokens: 8000,
+      max_tokens: 16000,
+      tools: [
+        {
+          type: "web_search_20250305" as const,
+          name: "web_search" as const,
+          max_uses: 5,
+        },
+      ],
       messages: [
         {
           role: "user",
@@ -92,20 +108,47 @@ Angle: ${angle}
 Key Arguments: ${keyArguments}
 Industry Track: ${track}
 
-Write a compelling, data-driven post that positions OptiCloud's Digital Sanitation platform as critical infrastructure for this space.`,
+First, research the topic using web search to find real sources, statistics, and SEO keywords. Then write a compelling, data-driven post that positions OptiCloud's Digital Sanitation platform as critical infrastructure for this space. Cite real sources with inline links.`,
         },
       ],
       system: STRATEGIC_PROMPT,
     });
 
-    let text =
-      response.content[0].type === "text" ? response.content[0].text : "";
+    // Extract text from response (may contain interleaved search/text blocks)
+    let text = "";
+    const citationUrls = new Map<string, { title: string; source: string }>();
 
-    // Strip markdown code fences if Claude wrapped the JSON
+    for (const block of response.content) {
+      if (block.type === "text") {
+        text += block.text;
+        // Collect citation URLs from web search results
+        if (block.citations) {
+          for (const citation of block.citations) {
+            if (citation.type === "web_search_result_location" && citation.url) {
+              citationUrls.set(citation.url, {
+                title: citation.title || "",
+                source: new URL(citation.url).hostname.replace(/^www\./, ""),
+              });
+            }
+          }
+        }
+      }
+    }
+
+    // Extract JSON from the response text (may have reasoning text before JSON)
     text = text.trim();
     if (text.startsWith("```")) {
       text = text.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
     }
+    const jsonStart = text.indexOf("{");
+    const jsonEnd = text.lastIndexOf("}");
+    if (jsonStart === -1 || jsonEnd === -1) {
+      return NextResponse.json(
+        { error: "AI response did not contain valid JSON" },
+        { status: 502 }
+      );
+    }
+    text = text.slice(jsonStart, jsonEnd + 1);
 
     const parsed = JSON.parse(text);
 
@@ -130,6 +173,28 @@ Write a compelling, data-driven post that positions OptiCloud's Digital Sanitati
     const nowIso = new Date(now).toISOString();
     const draftId = `draft-${now}-${slug}`;
 
+    // Build sourceArticles from AI output, falling back to extracted citations
+    type SourceArticle = BlogDraft["sourceArticles"][number];
+    let sourceArticles: SourceArticle[] = [];
+    if (Array.isArray(parsed.sourceArticles) && parsed.sourceArticles.length > 0) {
+      sourceArticles = parsed.sourceArticles
+        .filter((s: unknown): s is Record<string, string> =>
+          typeof s === "object" && s !== null && typeof (s as Record<string, string>).link === "string"
+        )
+        .map((s: Record<string, string>) => ({
+          title: String(s.title || "").slice(0, 200),
+          link: String(s.link).slice(0, 500),
+          source: String(s.source || "").slice(0, 100),
+        }))
+        .slice(0, 20);
+    }
+    // Merge in any citation URLs not already present
+    for (const [url, meta] of citationUrls) {
+      if (!sourceArticles.some((s) => s.link === url)) {
+        sourceArticles.push({ title: meta.title.slice(0, 200), link: url, source: meta.source });
+      }
+    }
+
     const draft: BlogDraft = {
       id: draftId,
       status: "draft",
@@ -138,7 +203,7 @@ Write a compelling, data-driven post that positions OptiCloud's Digital Sanitati
       metaDescription,
       content,
       track: track as Track,
-      sourceArticles: [],
+      sourceArticles,
       keywords,
       createdAt: nowIso,
       updatedAt: nowIso,
