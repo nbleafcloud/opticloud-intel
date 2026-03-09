@@ -36,9 +36,9 @@ export default function Header({ articleCount, lastUpdated }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/8 bg-[#0a0a0f]/80 backdrop-blur-xl">
-      <div className="mx-auto max-w-7xl px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <div>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3 sm:gap-6">
+          <div className="hidden sm:block">
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold tracking-[0.2em] text-emerald-400 uppercase">
                 Opticloud
@@ -50,13 +50,16 @@ export default function Header({ articleCount, lastUpdated }: HeaderProps) {
             </div>
             <p className="text-[11px] text-white/30 mt-0.5">{date}</p>
           </div>
+          <span className="sm:hidden text-xs font-semibold tracking-[0.15em] text-emerald-400 uppercase">
+            OC
+          </span>
 
-          <nav className="hidden sm:flex items-center gap-1">
+          <nav className="flex items-center gap-1">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${
+                className={`px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium transition ${
                   pathname === link.href
                     ? "bg-white/10 text-white"
                     : "text-white/40 hover:text-white/70 hover:bg-white/5"
