@@ -9,6 +9,7 @@ export default function NewDraftForm() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
   const [topic, setTopic] = useState("");
@@ -22,10 +23,29 @@ export default function NewDraftForm() {
     setError("");
 
     try {
+      // Phase 1: Research (web search for real sources)
+      setStatus("Researching sources...");
+      let researchContext = undefined;
+      try {
+        const researchRes = await fetch("/api/drafts/research", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ topic, angle, track }),
+        });
+        if (researchRes.ok) {
+          researchContext = await researchRes.json();
+        }
+        // If research fails, we continue without it
+      } catch {
+        // Research is optional — proceed without it
+      }
+
+      // Phase 2: Generate the draft (with research context if available)
+      setStatus("Writing draft...");
       const res = await fetch("/api/drafts/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, angle, keyArguments, track }),
+        body: JSON.stringify({ topic, angle, keyArguments, track, researchContext }),
       });
 
       if (!res.ok) {
@@ -151,7 +171,7 @@ export default function NewDraftForm() {
         disabled={generating}
         className="w-full rounded-lg border border-orange-500/30 bg-orange-500/15 py-2 text-sm font-medium text-orange-400 transition hover:bg-orange-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {generating ? "Researching & writing (~60s)..." : "Generate Draft"}
+        {generating ? (status || "Working...") : "Generate Draft"}
       </button>
     </form>
   );
